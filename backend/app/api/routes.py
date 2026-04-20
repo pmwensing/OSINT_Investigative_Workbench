@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from app.api.investigations import router as investigations_router
 from app.api.intelligence import router as intelligence_router
 from app.api.jobs import router as jobs_router
+from app.api.contradictions import router as contradictions_router
 
 router = APIRouter(prefix="/api")
 
@@ -12,3 +13,4 @@ def health():
 router.include_router(investigations_router)
 router.include_router(intelligence_router)
 router.include_router(jobs_router)
+router.include_router(contradictions_router)
