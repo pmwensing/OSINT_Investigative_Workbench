@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from app.api.investigations import router as investigations_router
+from app.api.intelligence import router as intelligence_router
 
 router = APIRouter(prefix="/api")
 
@@ -8,3 +9,4 @@ def health():
     return {"status": "ok"}
 
 router.include_router(investigations_router)
+router.include_router(intelligence_router)
