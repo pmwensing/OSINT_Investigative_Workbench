@@ -12,6 +12,8 @@ from app.api.review import router as review_router
 from app.api.report import router as report_router
 from app.api.narrative import router as narrative_router
 from app.api.hearing import router as hearing_router
+from app.api.risk import router as risk_router
+from app.api.export import router as export_router
 
 router = APIRouter(prefix="/api")
 
@@ -32,3 +34,5 @@ router.include_router(review_router)
 router.include_router(report_router)
 router.include_router(narrative_router)
 router.include_router(hearing_router)
+router.include_router(risk_router)
+router.include_router(export_router)
