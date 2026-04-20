@@ -8,6 +8,8 @@ from app.api.credibility import router as credibility_router
 from app.api.graph import router as graph_router
 from app.api.provenance import router as provenance_router
 from app.api.decision import router as decision_router
+from app.api.review import router as review_router
+from app.api.report import router as report_router
 
 router = APIRouter(prefix="/api")
 
@@ -24,3 +26,5 @@ router.include_router(credibility_router)
 router.include_router(graph_router)
 router.include_router(provenance_router)
 router.include_router(decision_router)
+router.include_router(review_router)
+router.include_router(report_router)
