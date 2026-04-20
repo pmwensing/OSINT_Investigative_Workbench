@@ -5,6 +5,7 @@ from app.api.jobs import router as jobs_router
 from app.api.contradictions import router as contradictions_router
 from app.api.timeline import router as timeline_router
 from app.api.credibility import router as credibility_router
+from app.api.graph import router as graph_router
 
 router = APIRouter(prefix="/api")
 
@@ -18,3 +19,4 @@ router.include_router(jobs_router)
 router.include_router(contradictions_router)
 router.include_router(timeline_router)
 router.include_router(credibility_router)
+router.include_router(graph_router)
