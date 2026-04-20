@@ -11,9 +11,17 @@ def build_binder_markdown(db, investigation_id):
     pkg = build_hearing_package(db, investigation_id)
 
     toc = "\n".join([f"- {item}" for item in pkg.get("table_of_contents", [])])
+    issues = "\n".join([
+        f"- Issue {i['issue']}: {i['analysis']} Conclusion: {i['conclusion']}"
+        for i in pkg.get("issues", [])
+    ])
     findings = "\n".join([
         f"- Entity {f['entity_id']}: credibility {f['credibility_score']}, claims {f['claim_count']}, contradictions {f['contradictions']}"
         for f in pkg.get("findings", [])
+    ])
+    exhibits = "\n".join([
+        f"- {e['exhibit_number']}: claim {e['claim_id']} — {e['excerpt'] or ''} ({e['locator'] or 'no locator'})"
+        for e in pkg.get("exhibit_index", [])
     ])
     contradictions = "\n".join([
         f"- {c['summary']} (severity: {c['severity']})"
@@ -25,7 +33,7 @@ def build_binder_markdown(db, investigation_id):
     ])
     orders = "\n".join([f"- {o}" for o in pkg.get("recommended_orders", [])])
 
-    md = f'''# Hearing Package\n\n## Cover Sheet\n\n**Title:** {pkg['cover_sheet']['title']}\n\n**Status:** {pkg['cover_sheet']['status']}\n\n**Freeze Hash:** {pkg['cover_sheet']['freeze_manifest_hash']}\n\n## Table of Contents\n\n{toc}\n\n## Adjudicator Summary\n\n{pkg.get('adjudicator_summary', '')}\n\n## Findings\n\n{findings}\n\n## Contradiction Matrix\n\n{contradictions}\n\n## Timeline\n\n{timeline}\n\n## Recommended Orders\n\n{orders}\n'''
+    md = f'''# Hearing Package\n\n## Cover Sheet\n\n**Title:** {pkg['cover_sheet']['title']}\n\n**Status:** {pkg['cover_sheet']['status']}\n\n**Freeze Hash:** {pkg['cover_sheet']['freeze_manifest_hash']}\n\n## Table of Contents\n\n{toc}\n\n## Adjudicator Summary\n\n{pkg.get('adjudicator_summary', '')}\n\n## Issues for Determination\n\n{issues}\n\n## Findings\n\n{findings}\n\n## Exhibit Index\n\n{exhibits}\n\n## Contradiction Matrix\n\n{contradictions}\n\n## Timeline\n\n{timeline}\n\n## Recommended Orders\n\n{orders}\n'''
     return {
         "markdown": md,
         "suggested_filename": f"hearing_package_{investigation_id}.md"
@@ -40,9 +48,17 @@ def build_binder_html(db, investigation_id):
         for i, item in enumerate(pkg.get("table_of_contents", []), start=1)
     ])
 
+    issue_items = [
+        f'Issue {i["issue"]}: {i["analysis"]} Conclusion: {i["conclusion"]}'
+        for i in pkg.get("issues", [])
+    ]
     findings_items = [
         f'Entity {f["entity_id"]}: credibility {f["credibility_score"]}, claims {f["claim_count"]}, contradictions {f["contradictions"]}'
         for f in pkg.get("findings", [])
+    ]
+    exhibit_items = [
+        f'{e["exhibit_number"]}: claim {e["claim_id"]} — {e["excerpt"] or ""} ({e["locator"] or "no locator"})'
+        for e in pkg.get("exhibit_index", [])
     ]
     contradiction_items = [
         f'{c["summary"]} (severity: {c["severity"]})'
@@ -53,11 +69,6 @@ def build_binder_html(db, investigation_id):
         for t in pkg.get("timeline", [])
     ]
     order_items = pkg.get("recommended_orders", [])
-
-    exhibit_links = _html_list([
-        f'Exhibit placeholder for claim/artefact linkage {idx + 1}'
-        for idx, _ in enumerate(pkg.get("contradiction_matrix", [])[:10])
-    ])
 
     html = f'''<!doctype html>
 <html>
@@ -89,24 +100,28 @@ a {{ color: black; text-decoration: none; }}
   <p>{pkg.get('adjudicator_summary', '')}</p>
 </div>
 <div class="section" id="sec-4">
+  <h2>Issues for Determination</h2>
+  {_html_list(issue_items)}
+</div>
+<div class="section" id="sec-5">
   <h2>Findings</h2>
   {_html_list(findings_items)}
 </div>
-<div class="section" id="sec-5">
+<div class="section" id="sec-6">
+  <h2>Exhibit Index</h2>
+  {_html_list(exhibit_items)}
+</div>
+<div class="section" id="sec-7">
   <h2>Contradiction Matrix</h2>
   {_html_list(contradiction_items)}
 </div>
-<div class="section" id="sec-6">
+<div class="section" id="sec-8">
   <h2>Timeline</h2>
   {_html_list(timeline_items)}
 </div>
-<div class="section" id="sec-7">
+<div class="section" id="sec-9">
   <h2>Recommended Orders</h2>
   {_html_list(order_items)}
-</div>
-<div class="section" id="sec-8">
-  <h2>Exhibit Links</h2>
-  {exhibit_links}
 </div>
 </body>
 </html>'''
