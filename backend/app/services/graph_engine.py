@@ -67,12 +67,90 @@ def shortest_path(db, investigation_id, source_id, target_id):
         path = queue.popleft()
         current = path[-1]
         if current == target_id:
-            return {
-                "path": [node_map[nid] for nid in path]
-            }
+            return {"path": [node_map[nid] for nid in path]}
         for nxt in sorted(adj.get(current, set())):
             if nxt not in seen:
                 seen.add(nxt)
                 queue.append(path + [nxt])
 
     return {"path": []}
+
+
+def degree_centrality(db, investigation_id):
+    graph, adj = build_adjacency(db, investigation_id)
+    node_map = {n["id"]: n for n in graph["nodes"]}
+    total = max(1, len(node_map) - 1)
+    scores = []
+
+    for node_id, node in node_map.items():
+        degree = len(adj.get(node_id, set()))
+        centrality = degree / total
+        scores.append({
+            "entity": node,
+            "degree": degree,
+            "centrality": round(centrality, 4),
+        })
+
+    scores.sort(key=lambda x: (-x["degree"], x["entity"]["label"]))
+    return scores
+
+
+def connected_components(db, investigation_id):
+    graph, adj = build_adjacency(db, investigation_id)
+    node_map = {n["id"]: n for n in graph["nodes"]}
+    seen = set()
+    components = []
+
+    for node_id in sorted(node_map.keys()):
+        if node_id in seen:
+            continue
+        queue = deque([node_id])
+        seen.add(node_id)
+        comp = []
+
+        while queue:
+            current = queue.popleft()
+            comp.append(node_map[current])
+            for nxt in sorted(adj.get(current, set())):
+                if nxt not in seen:
+                    seen.add(nxt)
+                    queue.append(nxt)
+
+        components.append({
+            "size": len(comp),
+            "nodes": comp,
+        })
+
+    components.sort(key=lambda x: -x["size"])
+    return components
+
+
+def neo4j_projection_payload(db, investigation_id):
+    graph = build_graph_payload(db, investigation_id)
+    return {
+        "nodes": [
+            {
+                "id": n["id"],
+                "labels": ["Entity", n["entity_type"].title()],
+                "properties": {
+                    "label": n["label"],
+                    "entity_type": n["entity_type"],
+                    "investigation_id": str(investigation_id),
+                },
+            }
+            for n in graph["nodes"]
+        ],
+        "relationships": [
+            {
+                "id": e["id"],
+                "type": e["relationship_type"].upper(),
+                "start": e["source"],
+                "end": e["target"],
+                "properties": {
+                    "relationship_type": e["relationship_type"],
+                    "investigation_id": str(investigation_id),
+                },
+            }
+            for e in graph["edges"]
+        ],
+    }
