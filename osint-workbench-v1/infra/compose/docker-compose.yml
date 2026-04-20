@@ -1,0 +1,97 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  neo4j:
+    image: neo4j:5
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER}/${NEO4J_PASSWORD}
+    volumes:
+      - neo4j_data:/data
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+
+  api:
+    build:
+      context: ../../
+      dockerfile: infra/docker/api.Dockerfile
+    env_file:
+      - ../../.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+      neo4j:
+        condition: service_started
+    ports:
+      - "8088:8088"
+    command: ["/bin/sh", "-lc", "alembic upgrade head && uvicorn api.main:app --host 0.0.0.0 --port 8088"]
+
+  worker:
+    build:
+      context: ../../
+      dockerfile: infra/docker/worker.Dockerfile
+    env_file:
+      - ../../.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+      neo4j:
+        condition: service_started
+      api:
+        condition: service_started
+    command: ["celery", "-A", "worker.celery_app.celery_app", "worker", "--loglevel=INFO"]
+
+  frontend:
+    build:
+      context: ../../
+      dockerfile: infra/docker/frontend.Dockerfile
+    env_file:
+      - ../../.env
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+  minio_data:
+  neo4j_data:
