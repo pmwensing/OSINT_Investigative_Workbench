@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, asdict
 from typing import Optional
+
 
 @dataclass
 class SourceManifestRow:
@@ -15,5 +18,5 @@ class SourceManifestRow:
     scan_root: str
     ingest_status: str = "ok"
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return asdict(self)

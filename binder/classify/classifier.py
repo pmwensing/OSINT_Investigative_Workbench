@@ -1,29 +1,46 @@
 from __future__ import annotations
+
+import argparse
 import csv
 from pathlib import Path
+
 from binder.classify.rules import classify_text
 
-def infer_title(basename: str) -> str:
-    stem = Path(basename).stem.replace("_", " ").replace("-", " ").strip()
-    return " ".join(w.capitalize() for w in stem.split()) or basename
 
-def packet_flags_for(category: str) -> str:
-    flags = ["full"]
-    if category in {"A_CHRONOLOGY","D_FIRE","E_LOCKOUT","F_FINANCIAL"}:
-        flags.append("adjudicator")
-    if category != "Z_UNCLASSIFIED":
-        flags.append("disclosure")
-    return ",".join(flags)
+def classify_manifest(manifest_csv: str, out_csv: str) -> str:
+    with open(manifest_csv, encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
 
-def classify_manifest(manifest_csv: str | Path) -> list[dict]:
-    rows = []
-    with Path(manifest_csv).open(newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            category, subcategory = classify_text(row["basename"], row["source_path"])
-            row["category"] = category
-            row["subcategory"] = subcategory
-            row["title"] = infer_title(row["basename"])
-            row["packet_flags"] = packet_flags_for(category)
-            rows.append(row)
-    return rows
+    if not rows:
+        Path(out_csv).write_text("", encoding="utf-8")
+        return out_csv
+
+    for row in rows:
+        basis = " ".join([
+            row.get("basename", ""),
+            row.get("source_path", ""),
+        ])
+        row["category"] = classify_text(basis)
+
+    fieldnames = list(rows[0].keys())
+    if "category" not in fieldnames:
+        fieldnames.append("category")
+
+    with open(out_csv, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    return out_csv
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--manifest", required=True)
+    parser.add_argument("--out", required=True)
+    args = parser.parse_args()
+    print(classify_manifest(args.manifest, args.out))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,18 +1,16 @@
-from __future__ import annotations
+CATEGORY_RULES = {
+    "A_CHRONOLOGY": ["timeline", "chronology", "sequence", "events", "history"],
+    "B_MAINTENANCE": ["maintenance", "repair", "appliance", "heat", "mould", "mold"],
+    "C_PEST": ["pest", "bedbug", "roach", "rats", "mice", "infestation"],
+    "D_FIRE": ["fire", "smoke", "alarm", "ofm", "esa", "electrical"],
+    "E_LOCKOUT": ["lockout", "access", "key", "entry", "denied", "possession"],
+    "F_FINANCIAL": ["receipt", "invoice", "hotel", "motel", "rent", "expense", "compensation", "financial"],
+}
 
-CATEGORY_RULES = [
-    ("A_CHRONOLOGY", ["timeline", "chronology", "chronological"]),
-    ("B_MAINTENANCE", ["maintenance", "repair", "heat", "appliance", "mould", "mold"]),
-    ("C_PEST", ["pest", "bedbug", "bed bug", "roach", "rat", "mouse", "mice"]),
-    ("D_FIRE", ["fire", "smoke", "alarm", "esa", "electrical", "inspection"]),
-    ("E_LOCKOUT", ["lockout", "access", "entry", "key", "door", "possession"]),
-    ("F_FINANCIAL", ["expense", "receipt", "hotel", "motel", "rent", "financial", "compensation"]),
-]
 
-def classify_text(*parts: str) -> tuple[str, str]:
-    haystack = " ".join(p for p in parts if p).lower()
-    for category, keywords in CATEGORY_RULES:
-        for kw in keywords:
-            if kw in haystack:
-                return category, kw
-    return "Z_UNCLASSIFIED", ""
+def classify_text(text: str) -> str:
+    lower = text.lower()
+    for category, keywords in CATEGORY_RULES.items():
+        if any(word in lower for word in keywords):
+            return category
+    return "Z_UNCLASSIFIED"

@@ -1,54 +1,47 @@
 from __future__ import annotations
-import argparse, csv
+
+import argparse
+import csv
 from pathlib import Path
 
-HEADERS = [
-    "exhibit_id","title","source_id","source_path","category","subcategory",
-    "packet_flags","sha256","duplicate_group_id","canonical_preferred","notes"
-]
+DISCLOSURE_CATS = {"A_CHRONOLOGY", "B_MAINTENANCE", "C_PEST", "D_FIRE", "E_LOCKOUT", "F_FINANCIAL"}
+ADJUDICATOR_CATS = {"A_CHRONOLOGY", "D_FIRE", "E_LOCKOUT", "F_FINANCIAL"}
 
-def read_master(master_csv: str | Path) -> list[dict]:
-    with Path(master_csv).open(newline="", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
 
-def filter_packet(rows: list[dict], packet_name: str) -> list[dict]:
-    filtered = []
-    for row in rows:
-        flags = {f.strip() for f in row["packet_flags"].split(",") if f.strip()}
-        if packet_name in flags:
-            if row["canonical_preferred"] == "no":
-                continue
-            filtered.append(row)
-    return filtered
+def build_curated_indexes(master_csv: str, out_dir: str) -> dict:
+    with open(master_csv, encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
 
-def write_csv(path: Path, rows: list[dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=HEADERS)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow(row)
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    disclosure = [r for r in rows if r.get("category") in DISCLOSURE_CATS]
+    adjudicator = [r for r in rows if r.get("category") in ADJUDICATOR_CATS]
+
+    disclosure_path = out / "DISCLOSURE_EXHIBIT_INDEX.csv"
+    adjudicator_path = out / "ADJUDICATOR_EXHIBIT_INDEX.csv"
+
+    fieldnames = rows[0].keys() if rows else []
+
+    for path, subset in ((disclosure_path, disclosure), (adjudicator_path, adjudicator)):
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(subset)
+
+    return {
+        "disclosure": str(disclosure_path),
+        "adjudicator": str(adjudicator_path),
+    }
+
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--master", required=True)
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
+    print(build_curated_indexes(args.master, args.out))
 
-    out = Path(args.out)
-    out.mkdir(parents=True, exist_ok=True)
-
-    rows = read_master(args.master)
-    disclosure = filter_packet(rows, "disclosure")
-    adjudicator = filter_packet(rows, "adjudicator")
-
-    write_csv(out / "DISCLOSURE_EXHIBIT_INDEX.csv", disclosure)
-    write_csv(out / "ADJUDICATOR_EXHIBIT_INDEX.csv", adjudicator)
-
-    print(f"Wrote {out / 'DISCLOSURE_EXHIBIT_INDEX.csv'}")
-    print(f"Wrote {out / 'ADJUDICATOR_EXHIBIT_INDEX.csv'}")
-    print(f"Disclosure rows: {len(disclosure)}")
-    print(f"Adjudicator rows: {len(adjudicator)}")
 
 if __name__ == "__main__":
     main()
