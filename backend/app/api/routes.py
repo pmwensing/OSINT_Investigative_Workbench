@@ -15,6 +15,7 @@ from app.api.hearing import router as hearing_router
 from app.api.risk import router as risk_router
 from app.api.export import router as export_router
 from app.api.pdf import router as pdf_router
+from app.api.quick_sheet import router as quick_sheet_router
 
 router = APIRouter(prefix="/api")
 
@@ -38,3 +39,4 @@ router.include_router(hearing_router)
 router.include_router(risk_router)
 router.include_router(export_router)
 router.include_router(pdf_router)
+router.include_router(quick_sheet_router)
