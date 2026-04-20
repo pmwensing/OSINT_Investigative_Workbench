@@ -10,6 +10,7 @@ from app.api.provenance import router as provenance_router
 from app.api.decision import router as decision_router
 from app.api.review import router as review_router
 from app.api.report import router as report_router
+from app.api.narrative import router as narrative_router
 
 router = APIRouter(prefix="/api")
 
@@ -28,3 +29,4 @@ router.include_router(provenance_router)
 router.include_router(decision_router)
 router.include_router(review_router)
 router.include_router(report_router)
+router.include_router(narrative_router)
