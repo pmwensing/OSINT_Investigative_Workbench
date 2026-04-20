@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from app.api.investigations import router as investigations_router
 
 router = APIRouter(prefix="/api")
 
@@ -6,6 +7,4 @@ router = APIRouter(prefix="/api")
 def health():
     return {"status": "ok"}
 
-@router.get("/investigations")
-def list_investigations():
-    return []
+router.include_router(investigations_router)
